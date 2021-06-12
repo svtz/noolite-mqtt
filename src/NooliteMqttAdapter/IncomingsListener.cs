@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using MQTTnet;
 using MQTTnet.Client.Receiving;
@@ -17,7 +18,8 @@ namespace NooliteMqttAdapter
         private readonly DevicesRepository _devicesRepository;
         private readonly IManagedMqttClient _mqttClient;
         private readonly IMtrfAdapter _mtrfAdapter;
-
+        private readonly Encoding _encoding = System.Text.Encoding.UTF8;
+        
         public IncomingListener(ILogger logger, DevicesRepository devicesRepository, IManagedMqttClient mqttClient, IMtrfAdapter mtrfAdapter)
         {
             _logger = logger;
@@ -37,37 +39,44 @@ namespace NooliteMqttAdapter
 
             _logger.Debug("IncomingListener started.");
         }
+
+        private class MqttCommands
+        {
+            public const string TurnOff = "0";
+            public const string TurnOn = "1";
+        }
         
-        private Task Handler(MqttApplicationMessageReceivedEventArgs message)
+        private async Task Handler(MqttApplicationMessageReceivedEventArgs message)
         {
             var command = message.ApplicationMessage.Payload != null
-                ? System.Text.Encoding.UTF8.GetString(message.ApplicationMessage.Payload)
+                ? _encoding.GetString(message.ApplicationMessage.Payload)
                 : "null";
             var topic = message.ApplicationMessage.Topic; 
             _logger.Debug("Incoming message topic: {topic}, content: {command}", 
                 topic,
                 command);
 
-            Action<Switch> action;
-            switch (command)
+            Func<Switch, Task>? action = command switch
             {
-                case "0":
-                    action = s =>
-                    {
-                        _mtrfAdapter.SetBrightnessF(s.Channel, s.ZeroPowerValue);
-                        _mtrfAdapter.OffF(s.Channel);
-                    };
-                    break;
-                case "1":
-                    action = s =>
-                    {
-                        _mtrfAdapter.SetBrightnessF(s.Channel, s.FullPowerValue);
-                        _mtrfAdapter.OnF(s.Channel);
-                    };
-                    break;
-                default:
-                    _logger.Error("Received unknown command from {topic}, the command was: {command}", topic, command);
-                    return Task.CompletedTask;
+                MqttCommands.TurnOff => async s =>
+                {
+                    _mtrfAdapter.SetBrightnessF(s.Channel, s.ZeroPowerValue);
+                    _mtrfAdapter.OffF(s.Channel);
+                    await SendMessage(s.StatusReportMqttTopic!, MqttCommands.TurnOff);
+                },
+                MqttCommands.TurnOn => async s =>
+                {
+                    _mtrfAdapter.SetBrightnessF(s.Channel, s.FullPowerValue);
+                    _mtrfAdapter.OnF(s.Channel);
+                    await SendMessage(s.StatusReportMqttTopic!, MqttCommands.TurnOn);
+                },
+                _ => null
+            };
+
+            if (action == null)
+            {
+                _logger.Error("Received unknown command from {topic}, the command was: {command}", topic, command);
+                return;
             }
 
             var switches = _devicesRepository.GetAllSwitches()
@@ -75,10 +84,22 @@ namespace NooliteMqttAdapter
                 .ToArray();
             foreach (var @switch in switches)
             {
-                action(@switch);
+                await action(@switch);
             }
-            
-            return Task.CompletedTask;
+        }
+
+        private async Task SendMessage(string topic, string content)
+        {
+            var message = new MqttApplicationMessageBuilder()
+                .WithTopic(topic)
+                .WithRetainFlag()
+                .WithPayload(_encoding.GetBytes(content))
+                .WithAtLeastOnceQoS()
+                .Build();
+
+            await _mqttClient.PublishAsync(new ManagedMqttApplicationMessageBuilder()
+                .WithApplicationMessage(message)
+                .Build());
         }
     }
 }
