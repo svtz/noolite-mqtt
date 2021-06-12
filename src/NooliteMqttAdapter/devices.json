@@ -1,0 +1,138 @@
+[
+  {
+    "$type": "NooliteMqttAdapter.Devices.Switch, NooliteMqttAdapter",
+    "Channel": 0,
+    "StatusReportChannels": [ 20 ],
+    "FullPowerValue": "1",
+    "ZeroPowerValue": "0",
+    "Description": "Зал - светильники",
+    "MqttTopic": "living-room/wall-lights",
+    "StatusReportMqttTopic": "living-room/wall-lights/status"
+  },
+  {
+    "$type": "NooliteMqttAdapter.Devices.Switch, NooliteMqttAdapter",
+    "Channel": 1,
+    "StatusReportChannels": [ 28, 29 ],
+    "FullPowerValue": "1",
+    "ZeroPowerValue": "0",
+    "Description": "Спальня - светильники",
+    "MqttTopic": "bedroom/wall-lights",
+    "StatusReportMqttTopic": "bedroom/wall-lights/status"
+  },
+  {
+    "$type": "NooliteMqttAdapter.Devices.Switch, NooliteMqttAdapter",
+    "Channel": 2,
+    "StatusReportChannels": [ 26 ],
+    "FullPowerValue": "1",
+    "ZeroPowerValue": "0",
+    "Description": "Ванная",
+    "MqttTopic": "bathroom/top-lights",
+    "StatusReportMqttTopic": "bathroom/top-lights/status"
+  },
+  {
+    "$type": "NooliteMqttAdapter.Devices.Switch, NooliteMqttAdapter",
+    "Channel": 3,
+    "StatusReportChannels": [ 18, 23 ],
+    "FullPowerValue": "1",
+    "ZeroPowerValue": "0",
+    "Description": "Коридор",
+    "MqttTopic": "hallway/top-lights",
+    "StatusReportMqttTopic": "hallway/top-lights/status"
+  },
+  {
+    "$type": "NooliteMqttAdapter.Devices.Switch, NooliteMqttAdapter",
+    "Channel": 4,
+    "StatusReportChannels": [ 25 ],
+    "FullPowerValue": "1",
+    "ZeroPowerValue": "0",
+    "Description": "Кухня",
+    "MqttTopic": "kitchen/chandelier",
+    "StatusReportMqttTopic": "kitchen/chandelier/status"
+  },
+  {
+    "$type": "NooliteMqttAdapter.Devices.Switch, NooliteMqttAdapter",
+    "Channel": 5,
+    "StatusReportChannels": [ 24 ],
+    "FullPowerValue": "1",
+    "ZeroPowerValue": "0",
+    "Description": "Подсветка рабочей зоны на кухне",
+    "MqttTopic": "kitchen/work-zone-lights",
+    "StatusReportMqttTopic": "kitchen/work-zone-lights/status"
+  },
+  {
+    "$type": "NooliteMqttAdapter.Devices.Switch, NooliteMqttAdapter",
+    "Channel": 6,
+    "StatusReportChannels": [ 27 ],
+    "FullPowerValue": "1",
+    "ZeroPowerValue": "0",
+    "Description": "Балкон",
+    "MqttTopic": "balcony/top-lights",
+    "StatusReportMqttTopic": "balcony/top-lights/status"
+  },
+  {
+    "$type": "NooliteMqttAdapter.Devices.Switch, NooliteMqttAdapter",
+    "Channel": 9,
+    "StatusReportChannels": [ 19 ],
+    "FullPowerValue": "1",
+    "ZeroPowerValue": "0",
+    "Description": "Зал",
+    "MqttTopic": "living-room/chandelier",
+    "StatusReportMqttTopic": "living-room/chandelier/status"
+  },
+  {
+    "$type": "NooliteMqttAdapter.Devices.Switch, NooliteMqttAdapter",
+    "Channel": 10,
+    "FullPowerValue": "1",
+    "ZeroPowerValue": "0",
+    "Description": "Вытяжной вентилятор в ванной",
+    "MqttTopic": "bathroom/ventilation",
+    "StatusReportMqttTopic": "bathroom/ventilation/status"
+  },
+  {
+    "$type": "NooliteMqttAdapter.Devices.Switch, NooliteMqttAdapter",
+    "Channel": 12,
+    "FullPowerValue": "1",
+    "ZeroPowerValue": "0",
+    "Description": "Тёплый пол на балконе",
+    "MqttTopic": "balcony/heating",
+    "StatusReportMqttTopic": "balcony/heating/status"
+  },
+  {
+    "$type": "NooliteMqttAdapter.Devices.Switch, NooliteMqttAdapter",
+    "Channel": 15,
+    "StatusReportChannels": [ 21, 22 ],
+    "FullPowerValue": "1",
+    "ZeroPowerValue": "0",
+    "Description": "Спальня",
+    "MqttTopic": "bedroom/chandelier",
+    "StatusReportMqttTopic": "bedroom/chandelier/status"
+  },
+  {
+    "$type": "NooliteMqttAdapter.Devices.TemperatureAndHumiditySensor, NooliteMqttAdapter",
+    "Channel": 11,
+    "MqttTopic": "bathroom/microclimate",
+    "Description": "Датчик температуры и влажности в ванной"
+  },
+  {
+    "$type": "NooliteMqttAdapter.Devices.OnOffSensor, NooliteMqttAdapter",
+    "Channel": 13,
+    "MqttTopic": "kitchen/work-zone-sensor",
+    "Description": "Датчик включения подсветки рабочей зоны кухни"
+  },
+  {
+    "$type": "NooliteMqttAdapter.Devices.TemperatureSensor, NooliteMqttAdapter",
+    "Channel": 14,
+    "MqttTopic": "balcony/temperature",
+    "Description": "Датчик температуры на балконе"
+  },
+  {
+    "$type": "NooliteMqttAdapter.Devices.Switch, NooliteMqttAdapter",
+    "Channel": 255,
+    "StatusReportChannels": [ 255 ],
+    "FullPowerValue": "1",
+    "ZeroPowerValue": "0",
+    "Description": "ТЕСТ",
+    "MqttTopic": "test",
+    "StatusReportMqttTopic": "test/status"
+  }
+]
