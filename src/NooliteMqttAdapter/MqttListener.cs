@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using MQTTnet;
 using MQTTnet.Client.Receiving;
@@ -12,15 +11,14 @@ using Serilog;
 
 namespace NooliteMqttAdapter
 {
-    internal sealed class IncomingListener
+    internal sealed class MqttListener
     {
         private readonly ILogger _logger;
         private readonly DevicesRepository _devicesRepository;
         private readonly IManagedMqttClient _mqttClient;
         private readonly IMtrfAdapter _mtrfAdapter;
-        private readonly Encoding _encoding = System.Text.Encoding.UTF8;
         
-        public IncomingListener(ILogger logger, DevicesRepository devicesRepository, IManagedMqttClient mqttClient, IMtrfAdapter mtrfAdapter)
+        public MqttListener(ILogger logger, DevicesRepository devicesRepository, IManagedMqttClient mqttClient, IMtrfAdapter mtrfAdapter)
         {
             _logger = logger;
             _devicesRepository = devicesRepository;
@@ -40,16 +38,10 @@ namespace NooliteMqttAdapter
             _logger.Debug("IncomingListener started.");
         }
 
-        private class MqttCommands
-        {
-            public const string TurnOff = "0";
-            public const string TurnOn = "1";
-        }
-        
         private async Task Handler(MqttApplicationMessageReceivedEventArgs message)
         {
             var command = message.ApplicationMessage.Payload != null
-                ? _encoding.GetString(message.ApplicationMessage.Payload)
+                ? MqttCommands.Encoding.GetString(message.ApplicationMessage.Payload)
                 : "null";
             var topic = message.ApplicationMessage.Topic; 
             _logger.Debug("Incoming message topic: {topic}, content: {command}", 
@@ -62,13 +54,13 @@ namespace NooliteMqttAdapter
                 {
                     _mtrfAdapter.SetBrightnessF(s.Channel, s.ZeroPowerValue);
                     _mtrfAdapter.OffF(s.Channel);
-                    await SendMessage(s.StatusReportMqttTopic!, MqttCommands.TurnOff);
+                    await _mqttClient.PublishAsync(MqttCommands.CreateTurnOff(topic));
                 },
                 MqttCommands.TurnOn => async s =>
                 {
                     _mtrfAdapter.SetBrightnessF(s.Channel, s.FullPowerValue);
                     _mtrfAdapter.OnF(s.Channel);
-                    await SendMessage(s.StatusReportMqttTopic!, MqttCommands.TurnOn);
+                    await _mqttClient.PublishAsync(MqttCommands.CreateTurnOn(topic));
                 },
                 _ => null
             };
@@ -86,20 +78,6 @@ namespace NooliteMqttAdapter
             {
                 await action(@switch);
             }
-        }
-
-        private async Task SendMessage(string topic, string content)
-        {
-            var message = new MqttApplicationMessageBuilder()
-                .WithTopic(topic)
-                .WithRetainFlag()
-                .WithPayload(_encoding.GetBytes(content))
-                .WithAtLeastOnceQoS()
-                .Build();
-
-            await _mqttClient.PublishAsync(new ManagedMqttApplicationMessageBuilder()
-                .WithApplicationMessage(message)
-                .Build());
         }
     }
 }

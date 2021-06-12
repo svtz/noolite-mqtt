@@ -30,7 +30,7 @@ namespace NooliteMqttAdapter
 
         private static async Task Run(IServiceProvider serviceProvider, CancellationToken ct)
         {
-            var listener = serviceProvider.GetRequiredService<IncomingListener>();
+            var listener = serviceProvider.GetRequiredService<MqttListener>();
             await listener.Start();
             await Task.Delay(-1, ct);
         }
@@ -64,7 +64,7 @@ namespace NooliteMqttAdapter
                 sp => new AdapterWrapper(Config.MtrfAdapterPort, sp.GetRequiredService<ILogger>()));
             #endif
             services.AddScoped<DevicesRepository>();
-            services.AddScoped<IncomingListener>();
+            services.AddScoped<MqttListener>();
         }
         
         private IServiceProvider CreateRootServiceProvider()

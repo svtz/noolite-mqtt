@@ -103,7 +103,7 @@ namespace NooliteMqttAdapter.NooliteAdapter
 
         private void OnReceiveMicroclimateData(object sender, MicroclimateData data)
         {
-            _logger.Information($"Получены климатические данные: {data}");
+            _logger.Debug($"Получены климатические данные: {data}");
             
             RaiseDataReceived(data);
         }
@@ -115,7 +115,7 @@ namespace NooliteMqttAdapter.NooliteAdapter
                 return;
             }
             
-            _logger.Information($"Получены данные: {JsonConvert.SerializeObject(data, Formatting.Indented, new StringEnumConverter())}");
+            _logger.Debug($"Получены данные: {JsonConvert.SerializeObject(data, Formatting.Indented, new StringEnumConverter())}");
             
             RaiseDataReceived(data);
         }
@@ -133,7 +133,7 @@ namespace NooliteMqttAdapter.NooliteAdapter
 
         private void OnConnect(object obj)
         {
-            _logger.Warning("Адаптер подключен");
+            _logger.Information("Адаптер подключен");
         }
 
         public virtual void Dispose()

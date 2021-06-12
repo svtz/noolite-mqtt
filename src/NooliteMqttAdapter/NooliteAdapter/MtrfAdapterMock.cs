@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if DEBUG
+using System;
 using Serilog;
 using ThinkingHome.NooLite;
 
@@ -70,3 +71,4 @@ namespace NooliteMqttAdapter.NooliteAdapter
         }
     }
 }
+#endif

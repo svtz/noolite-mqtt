@@ -23,16 +23,21 @@ namespace NooliteMqttAdapter.Devices
         public string? StatusReportMqttTopic { get; set; }
     }
 
-    internal class OnOffSensor : Device
+    internal abstract class Sensor : Device
     {
     }
     
-    internal class TemperatureSensor : Device
+    internal class OnOffSensor : Sensor
     {
     }
     
-    internal class TemperatureAndHumiditySensor : Device
+    internal class TemperatureSensor : Sensor
     {
+    }
+    
+    internal class TemperatureAndHumiditySensor : TemperatureSensor
+    {
+        public string? HumidityMqttTopic { get; set; }
     }
 
     internal class DevicesRepository
@@ -59,5 +64,6 @@ namespace NooliteMqttAdapter.Devices
         }
 
         public IEnumerable<Switch> GetAllSwitches() => _devices.OfType<Switch>();
+        public IEnumerable<Sensor> GetAllSensors() => _devices.OfType<Sensor>();
     }
 }
