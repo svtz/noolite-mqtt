@@ -17,7 +17,7 @@ namespace NooliteMqttAdapter
         public string MqttHost => _configurationRoot["MqttHost"];
         public string MqttUsername => _configurationRoot["MqttUsername"];
         public string MqttPassword => _configurationRoot["MqttPassword"];
-
+        public int MqttPort => int.Parse(_configurationRoot["MqttPort"]);
         public string MtrfAdapterPort => _configurationRoot["MtrfAdapterPort"];
         
         #endregion

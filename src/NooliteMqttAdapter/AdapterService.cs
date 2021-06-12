@@ -20,7 +20,7 @@ namespace NooliteMqttAdapter
         private ConfigReader Config { get; }
         private ILogger Logger { get; }
 
-        private const string ServiceNamePrefix = "noolite-mqtt";
+        private const string ServiceNamePrefix = "noolite";
         
         public AdapterService()
         {
@@ -40,8 +40,8 @@ namespace NooliteMqttAdapter
             var options = new MqttClientOptionsBuilder()
                 .WithClientId(uniqueServiceName)
                 .WithProtocolVersion(MqttProtocolVersion.V311)
-                .WithWebSocketServer(Config.MqttHost)
-                .WithCredentials("u_d6vwnG", "xYafsxL7")
+                .WithTcpServer(Config.MqttHost, Config.MqttPort)
+                .WithCredentials(Config.MqttUsername, Config.MqttPassword)
                 .Build();
 
             var managedOptions = new ManagedMqttClientOptionsBuilder()

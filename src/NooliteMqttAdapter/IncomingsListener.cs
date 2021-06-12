@@ -40,7 +40,44 @@ namespace NooliteMqttAdapter
         
         private Task Handler(MqttApplicationMessageReceivedEventArgs message)
         {
-            _logger.Debug($"Incoming message: {JsonConvert.SerializeObject(message.ApplicationMessage, Formatting.Indented)}");
+            var command = message.ApplicationMessage.Payload != null
+                ? System.Text.Encoding.UTF8.GetString(message.ApplicationMessage.Payload)
+                : "null";
+            var topic = message.ApplicationMessage.Topic; 
+            _logger.Debug("Incoming message topic: {topic}, content: {command}", 
+                topic,
+                command);
+
+            Action<Switch> action;
+            switch (command)
+            {
+                case "0":
+                    action = s =>
+                    {
+                        _mtrfAdapter.SetBrightnessF(s.Channel, s.ZeroPowerValue);
+                        _mtrfAdapter.OffF(s.Channel);
+                    };
+                    break;
+                case "1":
+                    action = s =>
+                    {
+                        _mtrfAdapter.SetBrightnessF(s.Channel, s.FullPowerValue);
+                        _mtrfAdapter.OnF(s.Channel);
+                    };
+                    break;
+                default:
+                    _logger.Error("Received unknown command from {topic}, the command was: {command}", topic, command);
+                    return Task.CompletedTask;
+            }
+
+            var switches = _devicesRepository.GetAllSwitches()
+                .Where(s => string.Equals(s.MqttTopic, topic, StringComparison.Ordinal))
+                .ToArray();
+            foreach (var @switch in switches)
+            {
+                action(@switch);
+            }
+            
             return Task.CompletedTask;
         }
     }
