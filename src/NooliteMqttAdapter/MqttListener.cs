@@ -52,15 +52,19 @@ namespace NooliteMqttAdapter
             {
                 MqttCommands.TurnOff => async s =>
                 {
-                    _mtrfAdapter.SetBrightnessF(s.Channel, s.ZeroPowerValue);
                     _mtrfAdapter.OffF(s.Channel);
-                    await _mqttClient.PublishAsync(MqttCommands.CreateTurnOff(topic));
+                    if (s.StatusReportMqttTopic != null)
+                        await _mqttClient.PublishAsync(MqttCommands.CreateTurnOff(s.StatusReportMqttTopic));
+                    else
+                        _logger.Error("StatusReportMqttTopic is not specified for switch with Channel: {channel}", s.Channel);
                 },
                 MqttCommands.TurnOn => async s =>
                 {
-                    _mtrfAdapter.SetBrightnessF(s.Channel, s.FullPowerValue);
                     _mtrfAdapter.OnF(s.Channel);
-                    await _mqttClient.PublishAsync(MqttCommands.CreateTurnOn(topic));
+                    if (s.StatusReportMqttTopic != null)
+                        await _mqttClient.PublishAsync(MqttCommands.CreateTurnOn(s.StatusReportMqttTopic));
+                    else
+                        _logger.Error("StatusReportMqttTopic is not specified for switch with Channel: {channel}", s.Channel);
                 },
                 _ => null
             };

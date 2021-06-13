@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Serilog;
@@ -10,13 +12,19 @@ namespace NooliteMqttAdapter.NooliteAdapter
 {
     internal class AdapterWrapper : IDisposable, IMtrfAdapter
     {
+        private readonly int _delayMs;
+        private readonly CancellationTokenSource _cts;
         private readonly ILogger _logger;
         
         private MTRFXXAdapter Adapter { get; }
-        private readonly object _lock = new object();
-
-        public AdapterWrapper(string portName, ILogger logger)
+        private readonly object _lock = new ();
+        private readonly ConcurrentQueue<Action> _actionQueue = new();
+        private readonly ManualResetEventSlim _resetEvent = new (false);
+        
+        public AdapterWrapper(string portName, int delayMs, ILogger logger, CancellationTokenSource cts)
         {
+            _delayMs = delayMs;
+            _cts = cts;
             Adapter = new MTRFXXAdapter(portName);
             _logger = logger.ForContext<MTRFXXAdapter>();
         }
@@ -25,6 +33,28 @@ namespace NooliteMqttAdapter.NooliteAdapter
 
         public event EventHandler<ReceivedData>? ReceiveData;
 
+        private async Task ProcessingLoop()
+        {
+            while (!_cts.IsCancellationRequested)
+            {
+                _resetEvent.Reset();
+                if (_actionQueue.TryDequeue(out var action))
+                {
+                    action();
+                    await Task.Delay(TimeSpan.FromMilliseconds(_delayMs));
+                }
+                else
+                {
+                    _resetEvent.Wait(_cts.Token);
+                }
+            }
+        }
+
+        private void EnqueueAction(Action action)
+        {
+            _actionQueue.Enqueue(action);
+            _resetEvent.Set();
+        }
         
         void IMtrfAdapter.Activate()
         {
@@ -33,47 +63,47 @@ namespace NooliteMqttAdapter.NooliteAdapter
 
         void IMtrfAdapter.On(byte channel)
         {
-            Adapter.On(channel);
+            EnqueueAction(() => Adapter.On(channel));
         }
 
         void IMtrfAdapter.OnF(byte channel, uint? deviceId)
         {
-            Adapter.OnF(channel, deviceId);
+            EnqueueAction(() => Adapter.OnF(channel, deviceId));
         }
 
         void IMtrfAdapter.Off(byte channel)
         {
-            Adapter.Off(channel);
+            EnqueueAction(() => Adapter.Off(channel));
         }
 
         void IMtrfAdapter.OffF(byte channel, uint? deviceId)
         {
-            Adapter.OffF(channel, deviceId);
+            EnqueueAction(() => Adapter.OffF(channel, deviceId));
         }
 
         void IMtrfAdapter.Switch(byte channel)
         {
-            Adapter.Switch(channel);
+            EnqueueAction(() => Adapter.Switch(channel));
         }
 
         void IMtrfAdapter.SwitchF(byte channel, uint? deviceId)
         {
-            Adapter.SwitchF(channel, deviceId);
+            EnqueueAction(() => Adapter.SwitchF(channel, deviceId));
         }
 
         void IMtrfAdapter.SetBrightness(byte channel, byte brightness)
         {
-            Adapter.SetBrightness(channel, brightness);
+            EnqueueAction(() => Adapter.SetBrightness(channel, brightness));
         }
 
         void IMtrfAdapter.SetBrightnessF(byte channel, byte brightness, uint? deviceId)
         {
-            Adapter.SetBrightnessF(channel, brightness, deviceId);
+            EnqueueAction(() => Adapter.SetBrightnessF(channel, brightness, deviceId));
         }
         
         void IMtrfAdapter.ReadState(byte channel)
         {
-            Adapter.SendCommand(MTRFXXMode.TXF, MTRFXXAction.SendCommand, channel, MTRFXXCommand.ReadState);
+            EnqueueAction(() => Adapter.SendCommand(MTRFXXMode.TXF, MTRFXXAction.SendCommand, channel, MTRFXXCommand.ReadState));
         }
 
         private void EnsureAdapterConnected()
@@ -93,6 +123,7 @@ namespace NooliteMqttAdapter.NooliteAdapter
                 Adapter.Error += OnError;
                 Adapter.Open();
                 Adapter.ExitServiceMode();
+                Task.Run(ProcessingLoop, _cts.Token);
             }
         }
 

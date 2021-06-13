@@ -19,6 +19,7 @@ namespace NooliteMqttAdapter
         public string MqttPassword => _configurationRoot["MqttPassword"];
         public int MqttPort => int.Parse(_configurationRoot["MqttPort"]);
         public string MtrfAdapterPort => _configurationRoot["MtrfAdapterPort"];
+        public int MtrfAdapterDelayMs => int.Parse(_configurationRoot["MtrfAdapterDelayMs"]);
         
         #endregion
         
@@ -31,14 +32,15 @@ namespace NooliteMqttAdapter
         public static ConfigReader ReadConfig()
         {
             var builder = new ConfigurationBuilder()
-                .AddJsonFile("settings.json")
-                .AddEnvironmentVariables();
+                .AddJsonFile("settings.json");
 
 #if DEBUG
             builder.AddJsonFile("settings.Debug.json");
 #else
             builder.AddJsonFile($"settings.Production.json");
 #endif
+
+            builder.AddEnvironmentVariables();
             
             return new ConfigReader(builder.Build());
         }

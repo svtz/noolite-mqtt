@@ -110,7 +110,8 @@
   {
     "$type": "NooliteMqttAdapter.Devices.TemperatureAndHumiditySensor, NooliteMqttAdapter",
     "Channel": 11,
-    "MqttTopic": "bathroom/microclimate",
+    "MqttTopic": "bathroom/temperature",
+    "HumidityMqttTopic": "bathroom/humidity",
     "Description": "Датчик температуры и влажности в ванной"
   },
   {
@@ -124,15 +125,5 @@
     "Channel": 14,
     "MqttTopic": "balcony/temperature",
     "Description": "Датчик температуры на балконе"
-  },
-  {
-    "$type": "NooliteMqttAdapter.Devices.Switch, NooliteMqttAdapter",
-    "Channel": 255,
-    "StatusReportChannels": [ 255 ],
-    "FullPowerValue": "1",
-    "ZeroPowerValue": "0",
-    "Description": "ТЕСТ",
-    "MqttTopic": "test",
-    "StatusReportMqttTopic": "test/status"
   }
 ]

@@ -30,8 +30,11 @@ namespace NooliteMqttAdapter
 
         private static async Task Run(IServiceProvider serviceProvider, CancellationToken ct)
         {
-            var listener = serviceProvider.GetRequiredService<MqttListener>();
-            await listener.Start();
+            var fromNoolite = serviceProvider.GetRequiredService<NooliteListener>();
+            fromNoolite.Activate();
+            
+            var fromMqtt = serviceProvider.GetRequiredService<MqttListener>();
+            await fromMqtt.Start();
             await Task.Delay(-1, ct);
         }
 
@@ -42,6 +45,7 @@ namespace NooliteMqttAdapter
                 .WithProtocolVersion(MqttProtocolVersion.V311)
                 .WithTcpServer(Config.MqttHost, Config.MqttPort)
                 .WithCredentials(Config.MqttUsername, Config.MqttPassword)
+                .WithCleanSession()
                 .Build();
 
             var managedOptions = new ManagedMqttClientOptionsBuilder()
@@ -61,10 +65,11 @@ namespace NooliteMqttAdapter
             services.AddSingleton<IMtrfAdapter, MtrfAdapterMock>();
             #else
             services.AddSingleton<IMtrfAdapter>(
-                sp => new AdapterWrapper(Config.MtrfAdapterPort, sp.GetRequiredService<ILogger>()));
+                sp => new AdapterWrapper(Config.MtrfAdapterPort, Config.MtrfAdapterDelayMs, sp.GetRequiredService<ILogger>(), sp.GetRequiredService<CancellationTokenSource>()));
             #endif
             services.AddScoped<DevicesRepository>();
             services.AddScoped<MqttListener>();
+            services.AddScoped<NooliteListener>();
         }
         
         private IServiceProvider CreateRootServiceProvider()

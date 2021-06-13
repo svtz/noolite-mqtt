@@ -10,7 +10,7 @@ using ThinkingHome.NooLite.Internal;
 
 namespace NooliteMqttAdapter
 {
-    internal sealed class NooliteFSensor : IDisposable
+    internal sealed class NooliteListener : IDisposable
     {
         private readonly IManagedMqttClient _mqttClient;
         private readonly IMtrfAdapter _adapter;
@@ -20,7 +20,7 @@ namespace NooliteMqttAdapter
         private readonly Lazy<IReadOnlyDictionary<int, Switch>> _rxChannelToSwitchConfig;
         private readonly Lazy<IReadOnlyDictionary<int, Switch>> _txChannelToSwitchConfig;
 
-        public NooliteFSensor(
+        public NooliteListener(
             IManagedMqttClient mqttClient,
             IMtrfAdapter adapter,
             DevicesRepository devicesRepository,
@@ -227,7 +227,7 @@ namespace NooliteMqttAdapter
                     break;
                 
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(receivedData.Command));
+                    throw new ArgumentOutOfRangeException(nameof(receivedData));
             }
         }
 
