@@ -206,6 +206,19 @@ namespace NooliteMqttAdapter
                     {
                         await _mqttClient.PublishAsync(MqttCommands.Create(temperatureSensor.MqttTopic, microclimateData.Temperature.ToString("F1")));
                         _log.Information("Temperature of {topic} is {temperature}", temperatureSensor.MqttTopic, microclimateData.Temperature);
+
+                        // TEMPORARY, waiting for Alice scenarios to support sensors
+                        if (temperatureSensor is not TemperatureAndHumiditySensor)
+                        {
+                            if (microclimateData.Temperature < 20)
+                            {
+                                await _mqttClient.PublishAsync(MqttCommands.CreateTurnOn("balcony/heating"));
+                            }
+                            else
+                            {
+                                await _mqttClient.PublishAsync(MqttCommands.CreateTurnOff("balcony/heating"));
+                            }
+                        }
                     }
                     else
                     {
@@ -218,6 +231,16 @@ namespace NooliteMqttAdapter
                     {
                         await _mqttClient.PublishAsync(MqttCommands.Create(humiditySensor.HumidityMqttTopic, microclimateData.Humidity.Value.ToString("D")));
                         _log.Information("Humidity of {topic} is {humidity}", humiditySensor.HumidityMqttTopic, microclimateData.Humidity.Value);
+                        
+                        // TEMPORARY, waiting for Alice scenarios to support sensors
+                        if (microclimateData.Humidity.Value > 50)
+                        {
+                            await _mqttClient.PublishAsync(MqttCommands.CreateTurnOn("bathroom/ventilation"));
+                        }
+                        else
+                        {
+                            await _mqttClient.PublishAsync(MqttCommands.CreateTurnOff("bathroom/ventilation"));
+                        }
                     }
                     else if (microclimateData.Humidity.HasValue)
                     {
