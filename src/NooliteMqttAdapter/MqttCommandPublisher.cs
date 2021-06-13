@@ -1,19 +1,26 @@
 using System.Text;
+using System.Threading.Tasks;
 using MQTTnet;
 using MQTTnet.Extensions.ManagedClient;
 
 namespace NooliteMqttAdapter
 {
-    public static class MqttCommands
+    public class MqttCommandPublisher
     {
+        private readonly IManagedMqttClient _cli;
         public const string TurnOff = "0";
         public const string TurnOn = "1";
         
         public static readonly Encoding Encoding = Encoding.UTF8;
 
-        public static ManagedMqttApplicationMessage Create(string topic, string command)
+        public MqttCommandPublisher(IManagedMqttClient cli)
         {
-            return new ManagedMqttApplicationMessageBuilder()
+            _cli = cli;
+        }
+        
+        public async Task PublishAsync(string topic, string command)
+        {
+            var message = new ManagedMqttApplicationMessageBuilder()
                 .WithApplicationMessage(new MqttApplicationMessageBuilder()
                     .WithTopic(topic)
                     .WithRetainFlag()
@@ -21,16 +28,18 @@ namespace NooliteMqttAdapter
                     .WithAtLeastOnceQoS()
                     .Build())
                 .Build();
+
+            await _cli.PublishAsync(message);
         }
         
-        public static ManagedMqttApplicationMessage CreateTurnOff(string topic)
+        public async Task PublishTurnOffAsync(string topic)
         {
-            return Create(topic, TurnOff);
+            await PublishAsync(topic, TurnOff);
         }
         
-        public static ManagedMqttApplicationMessage CreateTurnOn(string topic)
+        public async Task PublishTurnOnAsync(string topic)
         {
-            return Create(topic, TurnOn);
+            await PublishAsync(topic, TurnOn);
         }
     }
 }

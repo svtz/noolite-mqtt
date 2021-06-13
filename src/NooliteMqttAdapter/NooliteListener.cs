@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using MQTTnet.Extensions.ManagedClient;
 using NooliteMqttAdapter.Devices;
 using NooliteMqttAdapter.NooliteAdapter;
 using Serilog;
@@ -12,23 +11,23 @@ namespace NooliteMqttAdapter
 {
     internal sealed class NooliteListener : IDisposable
     {
-        private readonly IManagedMqttClient _mqttClient;
         private readonly IMtrfAdapter _adapter;
         private readonly DevicesRepository _devicesRepository;
+        private readonly MqttCommandPublisher _commandPublisher;
         private readonly ILogger _log;
         private readonly Lazy<IReadOnlyDictionary<int, Sensor>> _rxChannelToSensorConfig;
         private readonly Lazy<IReadOnlyDictionary<int, Switch>> _rxChannelToSwitchConfig;
         private readonly Lazy<IReadOnlyDictionary<int, Switch>> _txChannelToSwitchConfig;
 
         public NooliteListener(
-            IManagedMqttClient mqttClient,
             IMtrfAdapter adapter,
             DevicesRepository devicesRepository,
+            MqttCommandPublisher commandPublisher,
             ILogger log)
         {
-            _mqttClient = mqttClient;
             _adapter = adapter;
             _devicesRepository = devicesRepository;
+            _commandPublisher = commandPublisher;
             _log = log;
             _rxChannelToSensorConfig = new Lazy<IReadOnlyDictionary<int, Sensor>>(LoadSensorConfig);
             _rxChannelToSwitchConfig = new Lazy<IReadOnlyDictionary<int, Switch>>(LoadRxSwitchConfig);
@@ -125,14 +124,14 @@ namespace NooliteMqttAdapter
                     switchInfo = TryGetSwitchInfo(receivedData);
                     if (switchInfo?.StatusReportMqttTopic != null)
                     {
-                        await _mqttClient.PublishAsync(MqttCommands.CreateTurnOn(switchInfo.StatusReportMqttTopic));
+                        await _commandPublisher.PublishTurnOnAsync(switchInfo.StatusReportMqttTopic);
                         _log.Information("Switch turned on: {topic}", switchInfo.StatusReportMqttTopic);
                     }
 
                     var onSensorInfo = TryGetSensorInfo<OnOffSensor>(receivedData);
                     if (onSensorInfo?.MqttTopic != null)
                     {
-                        await _mqttClient.PublishAsync(MqttCommands.CreateTurnOn(onSensorInfo.MqttTopic));
+                        await _commandPublisher.PublishTurnOnAsync(onSensorInfo.MqttTopic);
                         _log.Information("Sensor activated: {topic}", onSensorInfo.MqttTopic);
                     }
                     else if (switchInfo == null)
@@ -149,14 +148,14 @@ namespace NooliteMqttAdapter
                     switchInfo = TryGetSwitchInfo(receivedData);
                     if (switchInfo?.StatusReportMqttTopic != null)
                     {
-                        await _mqttClient.PublishAsync(MqttCommands.CreateTurnOff(switchInfo.StatusReportMqttTopic));
+                        await _commandPublisher.PublishTurnOffAsync(switchInfo.StatusReportMqttTopic);
                         _log.Information("Switch turned off: {topic}", switchInfo.StatusReportMqttTopic);
                     }
 
                     var offSensorInfo = TryGetSensorInfo<OnOffSensor>(receivedData);
                     if (offSensorInfo?.MqttTopic != null)
                     {
-                        await _mqttClient.PublishAsync(MqttCommands.CreateTurnOff(offSensorInfo.MqttTopic));
+                        await _commandPublisher.PublishTurnOffAsync(offSensorInfo.MqttTopic);
                         _log.Information("Sensor deactivated: {topic}", offSensorInfo.MqttTopic);
                     }
                     else if (switchInfo == null)
@@ -177,7 +176,7 @@ namespace NooliteMqttAdapter
                     switchInfo = TryGetSwitchInfo(receivedData);
                     if (switchInfo?.StatusReportMqttTopic != null)
                     {
-                        await _mqttClient.PublishAsync(MqttCommands.CreateTurnOn(switchInfo.StatusReportMqttTopic));
+                        await _commandPublisher.PublishTurnOnAsync(switchInfo.StatusReportMqttTopic);
                         _log.Information("Switch turned on: {topic}", switchInfo.StatusReportMqttTopic);
                     }
                     else if (switchInfo == null)
@@ -191,7 +190,7 @@ namespace NooliteMqttAdapter
                     switchInfo = TryGetSwitchInfo(receivedData);
                     if (switchInfo?.StatusReportMqttTopic != null)
                     {
-                        await _mqttClient.PublishAsync(MqttCommands.CreateTurnOff(switchInfo.StatusReportMqttTopic));
+                        await _commandPublisher.PublishTurnOffAsync(switchInfo.StatusReportMqttTopic);
                         _log.Information("Switch turned off: {topic}", switchInfo.StatusReportMqttTopic);
                     }
                     else if (switchInfo == null)
@@ -204,7 +203,7 @@ namespace NooliteMqttAdapter
                     var temperatureSensor = TryGetSensorInfo<TemperatureSensor>(receivedData);
                     if (temperatureSensor?.MqttTopic != null)
                     {
-                        await _mqttClient.PublishAsync(MqttCommands.Create(temperatureSensor.MqttTopic, microclimateData.Temperature.ToString("F1")));
+                        await _commandPublisher.PublishAsync(temperatureSensor.MqttTopic, microclimateData.Temperature.ToString("F1"));
                         _log.Information("Temperature of {topic} is {temperature}", temperatureSensor.MqttTopic, microclimateData.Temperature);
 
                         // TEMPORARY, waiting for Alice scenarios to support sensors
@@ -212,11 +211,13 @@ namespace NooliteMqttAdapter
                         {
                             if (microclimateData.Temperature < 20)
                             {
-                                await _mqttClient.PublishAsync(MqttCommands.CreateTurnOn("balcony/heating"));
+                                await _commandPublisher.PublishTurnOnAsync("balcony/heating");
+                                _log.Verbose("Turned on balcony heating");
                             }
                             else
                             {
-                                await _mqttClient.PublishAsync(MqttCommands.CreateTurnOff("balcony/heating"));
+                                await _commandPublisher.PublishTurnOffAsync("balcony/heating");
+                                _log.Verbose("Turned off balcony heating");
                             }
                         }
                     }
@@ -229,17 +230,19 @@ namespace NooliteMqttAdapter
                         temperatureSensor is TemperatureAndHumiditySensor humiditySensor &&
                         humiditySensor.HumidityMqttTopic != null)
                     {
-                        await _mqttClient.PublishAsync(MqttCommands.Create(humiditySensor.HumidityMqttTopic, microclimateData.Humidity.Value.ToString("D")));
+                        await _commandPublisher.PublishAsync(humiditySensor.HumidityMqttTopic, microclimateData.Humidity.Value.ToString("D"));
                         _log.Information("Humidity of {topic} is {humidity}", humiditySensor.HumidityMqttTopic, microclimateData.Humidity.Value);
                         
                         // TEMPORARY, waiting for Alice scenarios to support sensors
                         if (microclimateData.Humidity.Value > 50)
                         {
-                            await _mqttClient.PublishAsync(MqttCommands.CreateTurnOn("bathroom/ventilation"));
+                            await _commandPublisher.PublishTurnOnAsync("bathroom/ventilation");
+                            _log.Verbose("Turned on bathroom vent");
                         }
                         else
                         {
-                            await _mqttClient.PublishAsync(MqttCommands.CreateTurnOff("bathroom/ventilation"));
+                            await _commandPublisher.PublishTurnOffAsync("bathroom/ventilation");
+                            _log.Verbose("Turned off bathroom vent");
                         }
                     }
                     else if (microclimateData.Humidity.HasValue)

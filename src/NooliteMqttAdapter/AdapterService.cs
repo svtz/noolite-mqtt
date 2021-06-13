@@ -70,6 +70,7 @@ namespace NooliteMqttAdapter
             services.AddScoped<DevicesRepository>();
             services.AddScoped<MqttListener>();
             services.AddScoped<NooliteListener>();
+            services.AddScoped<MqttCommandPublisher>();
         }
         
         private IServiceProvider CreateRootServiceProvider()

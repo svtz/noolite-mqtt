@@ -17,13 +17,15 @@ namespace NooliteMqttAdapter
         private readonly DevicesRepository _devicesRepository;
         private readonly IManagedMqttClient _mqttClient;
         private readonly IMtrfAdapter _mtrfAdapter;
-        
-        public MqttListener(ILogger logger, DevicesRepository devicesRepository, IManagedMqttClient mqttClient, IMtrfAdapter mtrfAdapter)
+        private readonly MqttCommandPublisher _commandPublisher;
+
+        public MqttListener(ILogger logger, DevicesRepository devicesRepository, IManagedMqttClient mqttClient, IMtrfAdapter mtrfAdapter, MqttCommandPublisher commandPublisher)
         {
             _logger = logger;
             _devicesRepository = devicesRepository;
             _mqttClient = mqttClient;
             _mtrfAdapter = mtrfAdapter;
+            _commandPublisher = commandPublisher;
         }
 
         public async Task Start()
@@ -41,7 +43,7 @@ namespace NooliteMqttAdapter
         private async Task Handler(MqttApplicationMessageReceivedEventArgs message)
         {
             var command = message.ApplicationMessage.Payload != null
-                ? MqttCommands.Encoding.GetString(message.ApplicationMessage.Payload)
+                ? MqttCommandPublisher.Encoding.GetString(message.ApplicationMessage.Payload)
                 : "null";
             var topic = message.ApplicationMessage.Topic; 
             _logger.Debug("Incoming message topic: {topic}, content: {command}", 
@@ -50,19 +52,19 @@ namespace NooliteMqttAdapter
 
             Func<Switch, Task>? action = command switch
             {
-                MqttCommands.TurnOff => async s =>
+                MqttCommandPublisher.TurnOff => async s =>
                 {
                     _mtrfAdapter.OffF(s.Channel);
                     if (s.StatusReportMqttTopic != null)
-                        await _mqttClient.PublishAsync(MqttCommands.CreateTurnOff(s.StatusReportMqttTopic));
+                        await _commandPublisher.PublishTurnOffAsync(s.StatusReportMqttTopic);
                     else
                         _logger.Error("StatusReportMqttTopic is not specified for switch with Channel: {channel}", s.Channel);
                 },
-                MqttCommands.TurnOn => async s =>
+                MqttCommandPublisher.TurnOn => async s =>
                 {
                     _mtrfAdapter.OnF(s.Channel);
                     if (s.StatusReportMqttTopic != null)
-                        await _mqttClient.PublishAsync(MqttCommands.CreateTurnOn(s.StatusReportMqttTopic));
+                        await _commandPublisher.PublishTurnOnAsync(s.StatusReportMqttTopic);
                     else
                         _logger.Error("StatusReportMqttTopic is not specified for switch with Channel: {channel}", s.Channel);
                 },
